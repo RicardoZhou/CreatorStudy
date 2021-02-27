@@ -1,0 +1,9 @@
+{
+  "name": "points-polygon",
+  "version": "0.0.1",
+  "description": "多边形节点gizmos, 欢迎关注微信公众号【白玉无冰】",
+  "author": "lamyoung.com",
+  "gizmos": {
+    "MeshPolygonSprite": "packages://points-polygon/main.js"
+  }
+}

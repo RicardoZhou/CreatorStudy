@@ -1,0 +1,17 @@
+{
+  "__type__": "cc.Material",
+  "_name": "fractal",
+  "_objFlags": 0,
+  "_native": "",
+  "_effectAsset": {
+    "__uuid__": "cc9b0a1a-c4cc-4d07-81de-8b519b70302e"
+  },
+  "_techniqueIndex": 0,
+  "_techniqueData": {
+    "0": {
+      "defines": {
+        "USE_TEXTURE": true
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "__type__": "cc.Material",
+  "_name": "SpiralZoom",
+  "_objFlags": 0,
+  "_native": "",
+  "_effectAsset": {
+    "__uuid__": "93c8d668-fef5-45d9-8ae7-03e44def00b2"
+  },
+  "_techniqueIndex": 0,
+  "_techniqueData": {
+    "0": {
+      "props": {
+        "C": {
+          "__type__": "cc.Vec2",
+          "x": 1,
+          "y": 0.149
+        },
+        "R": 0.9
+      }
+    }
+  }
+}
