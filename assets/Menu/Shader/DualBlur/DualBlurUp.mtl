@@ -1,0 +1,25 @@
+{
+  "__type__": "cc.Material",
+  "_name": "DualBlurUp",
+  "_objFlags": 0,
+  "_native": "",
+  "_effectAsset": {
+    "__uuid__": "75e05777-dade-48d3-b40c-247768c7daa8"
+  },
+  "_techniqueIndex": 1,
+  "_techniqueData": {
+    "0": {
+      "props": {
+        "offset": 5,
+        "resolution": {
+          "__type__": "cc.Vec2",
+          "x": 1920,
+          "y": 1080
+        }
+      },
+      "defines": {
+        "USE_TEXTURE": true
+      }
+    }
+  }
+}
