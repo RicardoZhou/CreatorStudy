@@ -14,7 +14,6 @@
     "DragonBones",
     "Geom Utils",
     "Native Socket",
-    "Slider",
     "Spine Skeleton",
     "StudioComponent",
     "Toggle",
@@ -28,8 +27,8 @@
     "3D Particle"
   ],
   "preview-port": 7456,
-  "design-resolution-width": 960,
-  "design-resolution-height": 640,
+  "design-resolution-width": 1920,
+  "design-resolution-height": 1080,
   "fit-width": false,
   "fit-height": true,
   "use-project-simulator-setting": false,

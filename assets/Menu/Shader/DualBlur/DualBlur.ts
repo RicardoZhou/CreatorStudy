@@ -1,17 +1,27 @@
-import DualBlurSprite from "./DualBlurSprite";
-
-const {ccclass, property} = cc._decorator;
+const { ccclass, property } = cc._decorator;
 
 /**
- * 基于 RenderTexture 实现多 Pass：https://forum.cocos.org/t/topic/126481
- * Dual Kawase Blur （双重模糊）教程地址： https://github.com/QianMo/X-PostProcessing-Library/tree/master/Assets/X-PostProcessing/Effects/DualKawaseBlur
- * 高品质后处理：十种故障艺术(Glitch Art)算法的总结与实现：https://zhuanlan.zhihu.com/p/148256756
+ * 基于 RenderTexture 实现多 Pass https://forum.cocos.org/t/topic/126481
+ * Dual Kawase Blur （双重模糊）教程地址 https://github.com/QianMo/X-PostProcessing-Library/tree/master/Assets/X-PostProcessing/Effects/DualKawaseBlur
+ * 高品质后处理：十种图像模糊算法的总结与实现 https://zhuanlan.zhihu.com/p/125744132
  */
 @ccclass
 export default class DualBlur extends cc.Component {
 
     @property(cc.Sprite)
-    sprite: cc.Sprite = null;
+    spriteSrc: cc.Sprite = null;
+
+    @property(cc.Sprite)
+    spriteDst: cc.Sprite = null;
+
+    @property(cc.Label)
+    lbOffset: cc.Label = null;
+
+    @property(cc.Label)
+    lbIteration: cc.Label = null;
+
+    @property(cc.Label)
+    lbScale: cc.Label = null;
 
     @property(cc.Material)
     materialDown: cc.Material = null;
@@ -19,56 +29,69 @@ export default class DualBlur extends cc.Component {
     @property(cc.Material)
     materialUp: cc.Material = null;
 
-    @property
-    iteration: number = 4;
-
     /**
      * 正在使用的 RenderTexture
      */
     protected renderTexture: cc.RenderTexture = null;
 
-    start () {
-        // 设置目标结点
-        const sprite = this.sprite,
-            node = this.sprite.node;
+    private _offset: number = 5;
+    private _iteration: number = 3;
+    private _scale: number = 0.5;
+
+    start() {
+        this.lbOffset.string = 'offset:' + this._offset;
+        this.lbIteration.string = 'iteration:' + this._iteration;
+        this.lbScale.string = 'scale:' + this._scale;
+        this.blur(this._offset, this._iteration, this._scale);
+    }
+
+    /**
+     * 模糊渲染
+     * @param offset 模糊半径
+     * @param iteration 模糊迭代次数
+     * @param scale 降采样缩放比例
+     */
+    blur(offset: number, iteration: number, scale: number = 0.5) {
+        // 设置源结点、目标sprite
+        const spriteDst = this.spriteDst,
+            nodeSrc = this.spriteSrc.node;
         // 设置材质
         const material = this.materialDown;
-        this.materialDown.setProperty('resolution', cc.v2(node.width, node.height));
-        this.materialUp.setProperty('resolution', cc.v2(node.width, node.height));
+        this.materialDown.setProperty('resolution', cc.v2(nodeSrc.width, nodeSrc.height));
+        this.materialDown.setProperty('offset', offset);
+        this.materialUp.setProperty('resolution', cc.v2(nodeSrc.width, nodeSrc.height));
+        this.materialUp.setProperty('offset', offset);
         // 创建临时 RenderTexture
         let srcRT = new cc.RenderTexture(),
             lastRT = new cc.RenderTexture();
         // 获取初始 RenderTexture
-        this.getRenderTexture(node, lastRT);
-        const baseSize: cc.Size = cc.size(lastRT.width, lastRT.height);
+        this.getRenderTexture(nodeSrc, lastRT);
         // 多 Pass 处理
         // 注：由于 OpenGL 中的纹理是倒置的，所以双数 Pass 的出的图像是颠倒的
-        
+
         // 记录升降纹理时纹理尺寸
         let pyramid: [number, number][] = [], tw: number = lastRT.width, th: number = lastRT.height;
         //Downsample
-        for(let i = 0; i < this.iteration; i++) {
+        for (let i = 0; i < iteration; i++) {
             pyramid.push([tw, th]);
             [lastRT, srcRT] = [srcRT, lastRT];
+            lastRT = new cc.RenderTexture;
+            // 缩小截图尺寸，提高效率
+            // 缩小尺寸时，RT会自动向下取整，导致黑边
+            tw = Math.max(tw * scale, 1), th = Math.max(th * scale, 1);
             this.renderWithMaterial(srcRT, lastRT, this.materialDown, cc.size(tw, th));
-            tw = Math.max(tw / 2, 1), th = Math.max(th / 2, 1);
         }
         // Upsample
-        for(let i = this.iteration - 2; i >= 0; i--) {
-            // pass次数过多导致图片尺寸过大
+        for (let i = iteration - 1; i >= 0; i--) {
             [lastRT, srcRT] = [srcRT, lastRT];
+            lastRT = new cc.RenderTexture;
             this.renderWithMaterial(srcRT, lastRT, this.materialUp, cc.size(pyramid[i][0], pyramid[i][1]));
-        }
-        // 最后一个 Upsample
-        if(this.iteration > 0) {
-            [lastRT, srcRT] = [srcRT, lastRT];
-            this.renderWithMaterial(srcRT, lastRT, this.materialUp);
         }
         // 使用经过处理的 RenderTexture
         this.renderTexture = lastRT;
-        sprite.spriteFrame = new cc.SpriteFrame(this.renderTexture);
+        spriteDst.spriteFrame = new cc.SpriteFrame(this.renderTexture);
         // 翻转纹理y轴
-        sprite.spriteFrame.setFlipY(true);
+        spriteDst.spriteFrame.setFlipY(true);
         // 销毁不用的临时 RenderTexture
         srcRT.destroy();
     }
@@ -79,7 +102,7 @@ export default class DualBlur extends cc.Component {
      * @param out 输出
      * @see RenderUtil.ts https://gitee.com/ifaswind/eazax-ccc/blob/master/utils/RenderUtil.ts
      */
-     protected getRenderTexture(node: cc.Node, out?: cc.RenderTexture) {
+    protected getRenderTexture(node: cc.Node, out?: cc.RenderTexture) {
         // 检查参数
         if (!cc.isValid(node)) {
             return null;
@@ -91,7 +114,8 @@ export default class DualBlur extends cc.Component {
         const width = Math.floor(node.width),
             height = Math.floor(node.height);
         // 初始化 RenderTexture
-        out.initWithSize(width, height);
+        // 如果截图内容中不包含 Mask 组件，可以不用传递第三个参数
+        out.initWithSize(width, height, cc.gfx.RB_FMT_S8);
         // 创建临时摄像机用于渲染目标节点
         const cameraNode = new cc.Node();
         cameraNode.parent = node;
@@ -117,7 +141,7 @@ export default class DualBlur extends cc.Component {
      * @param size RenderTexture尺寸缩放比例
      * @see RenderUtil.ts https://gitee.com/ifaswind/eazax-ccc/blob/master/utils/RenderUtil.ts
      */
-     protected renderWithMaterial(srcRT: cc.RenderTexture, dstRT: cc.RenderTexture | cc.Material, material?: cc.Material, size?: cc.Size) {
+    protected renderWithMaterial(srcRT: cc.RenderTexture, dstRT: cc.RenderTexture | cc.Material, material?: cc.Material, size?: cc.Size) {
         // 检查参数
         if (dstRT instanceof cc.Material) {
             material = dstRT;
@@ -126,14 +150,15 @@ export default class DualBlur extends cc.Component {
         // 创建临时节点（用于渲染 RenderTexture）
         const tempNode = new cc.Node();
         tempNode.setParent(cc.Canvas.instance.node);
-        const tempSprite = tempNode.addComponent(DualBlurSprite);
+        const tempSprite = tempNode.addComponent(cc.Sprite);
         tempSprite.sizeMode = cc.Sprite.SizeMode.RAW;
         tempSprite.trim = false;
         tempSprite.spriteFrame = new cc.SpriteFrame(srcRT);
         // 获取图像宽高
         const { width, height } = size ?? { width: srcRT.width, height: srcRT.height };
         // 初始化 RenderTexture
-        dstRT.initWithSize(width, height);
+        // 如果截图内容中不包含 Mask 组件，可以不用传递第三个参数
+        dstRT.initWithSize(width, height, cc.gfx.RB_FMT_S8);
         // 更新材质
         if (material instanceof cc.Material) {
             tempSprite.setMaterial(0, material);
@@ -155,6 +180,36 @@ export default class DualBlur extends cc.Component {
         tempNode.destroy();
         // 返回 RenderTexture
         return dstRT;
+    }
+
+    protected onSliderOffsetEvent(sld: cc.Slider) {
+        let offset = Math.round(sld.progress * 10 * 100) / 100;
+        if (this._offset == offset)
+            return;
+        this._offset = offset;
+        this.lbOffset.string = 'offset:' + this._offset;
+        cc.log(`offset: ${this._offset}`);
+        this.blur(this._offset, this._iteration, this._scale);
+    }
+
+    protected onSliderIterationEvent(sld: cc.Slider) {
+        let iteration = Math.round(sld.progress * 5);
+        if (this._iteration == iteration)
+            return;
+        this._iteration = iteration;
+        this.lbIteration.string = 'iteration:' + this._iteration;
+        cc.log(`iteration: ${this._iteration}`);
+        this.blur(this._offset, this._iteration, this._scale);
+    }
+
+    protected onSliderScaleEvent(sld: cc.Slider) {
+        let scale = Math.max(Math.round(sld.progress * 10) / 10, 0.1);
+        if (this._scale == scale)
+            return;
+        this._scale = scale;
+        this.lbScale.string = 'scale:' + this._scale;
+        cc.log(`scale: ${this._scale}`);
+        this.blur(this._offset, this._iteration, this._scale);
     }
 
 }

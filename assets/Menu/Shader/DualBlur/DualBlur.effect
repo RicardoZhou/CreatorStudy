@@ -44,16 +44,12 @@ CCProgram vs %{
 
   #if USE_TEXTURE
   in vec2 a_uv0;
-  in vec2 a_p;
-  in vec2 a_q;
 
   out vec2 v_uv0;
   out vec4 v_uv1;
   out vec4 v_uv2;
   out vec4 v_uv3;
   out vec4 v_uv4;
-  out vec2 v_p;
-  out vec2 v_q;
 
   #endif
 
@@ -75,14 +71,12 @@ CCProgram vs %{
     vec2 uv = a_uv0;
     vec2 texelSize = 0.5 / resolution;
     v_uv0 = uv;
-    v_uv1.xy = uv - texelSize * vec2(1. + offset); //top right
-    v_uv1.zw = uv + texelSize * vec2(1. + offset); //bottom left
-    v_uv2.xy = uv - vec2(texelSize.x, -texelSize.y) * vec2(1. + offset); //top right
-    v_uv2.zw = uv + vec2(texelSize.x, -texelSize.y) * vec2(1. + offset); //bottom left
+    v_uv1.xy = uv - texelSize * vec2(offset); //top right
+    v_uv1.zw = uv + texelSize * vec2(offset); //bottom left
+    v_uv2.xy = uv - vec2(texelSize.x, -texelSize.y) * vec2(offset); //top right
+    v_uv2.zw = uv + vec2(texelSize.x, -texelSize.y) * vec2(offset); //bottom left
     #endif
 
-    v_p = a_p;
-    v_q = a_q; 
     v_color = a_color;
 
     return pos;
@@ -111,14 +105,11 @@ CCProgram vs %{
     v_uv4.zw = uv - texelSize * offset;
     #endif
 
-    v_p = a_p;
-    v_q = a_q; 
     v_color = a_color;
 
     return pos;
   }
 }%
-
 
 CCProgram fs %{
   precision highp float;
@@ -135,8 +126,6 @@ CCProgram fs %{
   in vec4 v_uv2;
   in vec4 v_uv3;
   in vec4 v_uv4;
-  in vec2 v_p;
-  in vec2 v_q;
   uniform sampler2D texture;
   #endif
 
@@ -145,20 +134,15 @@ CCProgram fs %{
     float offset;
   };
 
-  vec2 normalizeUV(vec2 uv) {
-    vec2 newUV = clamp(uv * v_p + v_q, 0., 1.);
-    return (newUV - v_q) / v_p;
-  }
-
   vec4 Down () {
     vec4 sum = vec4(1);
 
     #if USE_TEXTURE
-      sum = texture2D(texture, normalizeUV(v_uv0)) * 4.;
-      sum += texture2D(texture, normalizeUV(v_uv1.xy));
-      sum += texture2D(texture, normalizeUV(v_uv1.zw));
-      sum += texture2D(texture, normalizeUV(v_uv2.xy));
-      sum += texture2D(texture, normalizeUV(v_uv2.zw));
+      sum = texture2D(texture, v_uv0) * 4.;
+      sum += texture2D(texture, v_uv1.xy);
+      sum += texture2D(texture, v_uv1.zw);
+      sum += texture2D(texture, v_uv2.xy);
+      sum += texture2D(texture, v_uv2.zw);
       sum *= 0.125;
     #endif
 
