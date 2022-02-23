@@ -75,7 +75,6 @@ export default class DualBlur extends cc.Component {
         for (let i = 0; i < iteration; i++) {
             pyramid.push([tw, th]);
             [lastRT, srcRT] = [srcRT, lastRT];
-            lastRT = new cc.RenderTexture;
             // 缩小截图尺寸，提高效率
             // 缩小尺寸时，RT会自动向下取整，导致黑边
             tw = Math.max(tw * scale, 1), th = Math.max(th * scale, 1);
@@ -84,7 +83,6 @@ export default class DualBlur extends cc.Component {
         // Upsample
         for (let i = iteration - 1; i >= 0; i--) {
             [lastRT, srcRT] = [srcRT, lastRT];
-            lastRT = new cc.RenderTexture;
             this.renderWithMaterial(srcRT, lastRT, this.materialUp, cc.size(pyramid[i][0], pyramid[i][1]));
         }
         // 使用经过处理的 RenderTexture
